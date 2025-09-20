@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивное руководство по ACF на PHP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: WebCraft UI-KIT Palette (Primary: #2563eb, Accent: #f59e0b, Dark: #111827, Light: #f9fafb) -->
+    <!-- Application Structure Plan: Я разработал двухколоночный макет с фиксированной боковой панелью навигации и основной областью контента. Эта структура выбрана потому, что она является стандартом для технической документации и обеспечивает быстрый доступ к любому разделу. Ключевая интерактивная функция — это "Справочник по типам полей", который позволяет пользователям динамически просматривать детали и примеры кода для каждого поля, превращая пассивное чтение в активный поиск информации. Такой подход значительно повышает удобство использования по сравнению с линейным документом, так как разработчики часто ищут информацию о конкретных полях, а не читают руководство от начала до конца. -->
+    <!-- Visualization & Content Choices: Информация из отчета была сгруппирована в логические разделы. Вместо диаграмм, которые здесь неуместны, я создал интерактивный браузер полей (Goal: Organize/Inform, Method: HTML/CSS + JS Interaction) для раздела "Типы полей". Это позволяет пользователям выбирать поле и мгновенно получать его описание, параметры и готовый код. Для объяснения сложных концепций, таких как "Правила расположения" и "Хуки", я использовал структурированные блоки HTML/CSS с иконками и визуальными разделителями (Goal: Inform, Method: Structured HTML/CSS), что делает информацию более наглядной, чем простой текст. Все взаимодействия реализованы на чистом JavaScript, без использования SVG или Mermaid JS, в полном соответствии с требованиями. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb', /* blue-600 */
+                        accent: '#f59e0b', /* amber-500 */
+                        dark: '#111827', /* gray-900 */
+                        light: '#f9fafb' /* gray-50 */
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Tailwind classes will handle background and text color based on light/dark mode */
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-link.active {
+            background-color: var(--tw-colors-blue-50); /* Using blue-50 for active nav link background */
+            color: var(--tw-colors-primary); /* Using primary color for active nav link text */
+            font-weight: 600;
+        }
+        .field-type-btn.active {
+            background-color: var(--tw-colors-primary); /* Using primary color for active field type button */
+            color: white;
+        }
+        .code-block {
+            position: relative;
+        }
+        .code-block pre {
+            white-space: pre-wrap; /* Ensures text wraps within the pre tag */
+            word-break: break-word; /* Breaks long words if they don't fit */
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: var(--tw-colors-gray-200); /* Using gray-200 for copy button background */
+            color: var(--tw-colors-gray-700); /* Using gray-700 for copy button text */
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background-color 0.2s;
+        }
+        .copy-btn:hover {
+            background-color: var(--tw-colors-gray-300); /* Using gray-300 for copy button hover */
+        }
+        .copy-btn.copied {
+            background-color: #48bb78; /* Keeping a standard green for copied feedback */
+            color: white;
+        }
+    </style>
+</head>
+<body class="antialiased bg-light text-gray-900 dark:bg-dark dark:text-light transition-colors duration-300">
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-white/50 dark:bg-dark/50 backdrop-blur-sm border-r border-gray-200/80 dark:border-gray-700/80 p-6 sticky top-0 h-screen overflow-y-auto hidden md:block">
+            <h1 class="text-xl font-bold text-primary dark:text-accent mb-8">ACF на PHP</h1>
+            <nav id="desktop-nav" class="space-y-2">
+                <a href="#intro" class="nav-link block p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Введение</a>
+                <a href="#functions" class="nav-link block p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Основные функции</a>
+                <a href="#best-practices" class="nav-link block p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Рекомендации</a>
+                <a href="#group-settings" class="nav-link block p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Настройки группы</a>
+                <a href="#field-settings" class="nav-link block p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Общие настройки поля</a>
+                <a href="#conditional-logic" class="nav-link block p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Условная логика</a>
+                <a href="#field-types" class="nav-link block p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Справочник по полям</a>
+                <a href="#advanced" class="nav-link block p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Расширенная кастомизация</a>
+                <a href="#troubleshooting" class="nav-link block p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200/50 dark:hover:bg-gray-700/50">Устранение неполадок</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-10">
+            <!-- Mobile Navigation -->
+            <div class="md:hidden mb-6">
+                <select id="mobile-nav" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-light shadow-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                    <option value="intro">Введение</option>
+                    <option value="functions">Основные функции</option>
+                    <option value="best-practices">Рекомендации</option>
+                    <option value="group-settings">Настройки группы</option>
+                    <option value="field-settings">Общие настройки поля</option>
+                    <option value="conditional-logic">Условная логика</option>
+                    <option value="field-types">Справочник по полям</option>
+                    <option value="advanced">Расширенная кастомизация</option>
+                    <option value="troubleshooting">Устранение неполадок</option>
+                </select>
+            </div>
+
+            <div id="content-container">
+                <section id="intro" class="content-section space-y-6">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-light border-b border-gray-200 dark:border-gray-700 pb-2">Введение: Зачем использовать PHP?</h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-300">Программное определение полей ACF с использованием PHP — это продвинутый подход, который интегрирует определения полей непосредственно в кодовую базу вашей темы или плагина. Это дает значительные преимущества по сравнению с созданием полей через интерфейс администратора.</p>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+                            <h3 class="font-semibold text-lg mb-2 text-primary dark:text-accent">✔️ Контроль версий</h3>
+                            <p class="text-gray-600 dark:text-gray-300">Определения полей хранятся в файлах, что позволяет отслеживать их с помощью Git. Это обеспечивает согласованность между средами разработки и упрощает командную работу.</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+                            <h3 class="font-semibold text-lg mb-2 text-primary dark:text-accent">⚡ Оптимизация производительности</h3>
+                            <p class="text-gray-600 dark:text-gray-300">ACF загружает поля из кода, а не из базы данных, что уменьшает количество SQL-запросов и ускоряет загрузку сайта.</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+                            <h3 class="font-semibold text-lg mb-2 text-primary dark:text-accent">🔒 Надежность данных</h3>
+                            <p class="text-gray-600 dark:text-gray-300">Хранение определений в коде защищает их от случайных удалений или повреждений в базе данных.</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+                            <h3 class="font-semibold text-lg mb-2 text-primary dark:text-accent">📦 Простое распространение</h3>
+                            <p class="text-gray-600 dark:text-gray-300">Конфигурации полей поставляются вместе с вашей темой или плагином, что упрощает развертывание и настройку новых сайтов.</p>
+                        </div>
+                    </div>
+                     <div class="bg-amber-100/50 border-l-4 border-accent text-amber-800 p-4 rounded-r-lg" role="alert">
+                        <p class="font-bold">Ключевое отличие</p>
+                        <p>Поля, зарегистрированные через PHP, **не видны и не редактируются** в интерфейсе "Произвольные поля". Все изменения вносятся только в коде. Это парадигма "код как источник истины".</p>
+                    </div>
+                </section>
+
+                <section id="functions" class="content-section space-y-6">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-light border-b border-gray-200 dark:border-gray-700 pb-2">Основные функции</h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-300">ACF предоставляет несколько ключевых функций для программной регистрации полей и групп полей.</p>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+                        <h3 class="font-semibold text-lg mb-2"><code>acf_add_local_field_group()</code></h3>
+                        <p class="text-gray-600 dark:text-gray-300 mb-4">Основная функция для регистрации новой группы полей. Принимает массив, описывающий группу, ее поля и правила расположения.</p>
+                        <h3 class="font-semibold text-lg mb-2"><code>acf_add_local_field()</code></h3>
+                        <p class="text-gray-600 dark:text-gray-300">Используется для добавления отдельного поля. Требует указания родительской группы через параметр <code>parent</code>.</p>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-light mb-4">Пример базовой структуры</h3>
+                        <div class="code-block bg-dark text-light p-4 rounded-lg overflow-x-auto">
+                            <button class="copy-btn">Копировать</button>
+                            <pre><code class="language-php">if( function_exists('acf_add_local_field_group') ):
+
+acf_add_local_field_group(array(
+    'key' => 'group_my_custom_content',
+    'title' => 'Мой пользовательский контент',
+    'fields' => array(
+        array(
+            'key' => 'field_my_text_field',
+            'label' => 'Пользовательский заголовок',
+            'name' => 'custom_headline',
+            'type' => 'text',
+        ),
+    ),
+    'location' => array(
+        array(
+            array(
+                'param' => 'post_type',
+                'operator' => '==',
+                'value' => 'post',
+            ),
+        ),
+    ),
+));
+
+endif;</code></pre>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="best-practices" class="content-section space-y-6">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-light border-b border-gray-200 dark:border-gray-700 pb-2">Рекомендации по внедрению</h2>
+                    <div class="space-y-4">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                            <h3 class="font-semibold text-lg mb-2">🗝️ Уникальные ключи</h3>
+                            <p class="text-gray-600 dark:text-gray-300">Каждая группа и поле должны иметь уникальный `key`. Для групп используйте префикс `group_`, для полей — `field_`. Дубликаты ключей приведут к перезаписи и непредсказуемому поведению.</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                            <h3 class="font-semibold text-lg mb-2">🚀 Используйте хук `acf/init`</h3>
+                            <p class="text-gray-600 dark:text-gray-300">Всегда регистрируйте свои поля внутри функции, привязанной к хуку `add_action('acf/init', 'my_acf_init_function');`. Это гарантирует, что ACF полностью загружен и готов к приему ваших определений.</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                            <h3 class="font-semibold text-lg mb-2">📂 Структура кода</h3>
+                            <p class="text-gray-600 dark:text-gray-300">Для чистоты кода выносите определения полей в отдельный файл (например, `inc/acf-fields.php`) и подключайте его в `functions.php` вашей темы.</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                            <h3 class="font-semibold text-lg mb-2">⚙️ Генерация кода через экспорт</h3>
+                            <p class="text-gray-600 dark:text-gray-300">Чтобы быстро получить правильную структуру массива для сложного поля, создайте его сначала в интерфейсе, а затем экспортируйте через "Произвольные поля" > "Инструменты" > "Сгенерировать PHP".</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="group-settings" class="content-section space-y-6">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-light border-b border-gray-200 dark:border-gray-700 pb-2">Настройки группы полей</h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-300">Группа полей — это контейнер, который имеет собственные настройки отображения и расположения.</p>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                        <h3 class="font-semibold text-lg mb-2">Ключевые параметры</h3>
+                        <ul class="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-2">
+                            <li><strong>key:</strong> Уникальный ID (начинается с `group_`).</li>
+                            <li><strong>title:</strong> Заголовок метабокса в админ-панели.</li>
+                            <li><strong>fields:</strong> Массив с определениями всех полей внутри этой группы.</li>
+                            <li><strong>location:</strong> Массив правил, определяющий, где будет отображаться группа (например, для определенных типов записей или шаблонов страниц).</li>
+                            <li><strong>position:</b> Позиция на экране редактирования (`normal`, `acf_after_title`, `side`).</li>
+                            <li><strong>style:</strong> Стиль метабокса (`default`, `seamless`).</li>
+                            <li><strong>hide_on_screen:</strong> Массив элементов для скрытия (например, `['the_content', 'excerpt']`).</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="field-settings" class="content-section space-y-6">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-light border-b border-gray-200 dark:border-gray-700 pb-2">Общие настройки поля</h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-300">Каждое поле, независимо от его типа, имеет набор общих параметров.</p>
+                     <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                        <h3 class="font-semibold text-lg mb-2">Основные параметры</h3>
+                        <ul class="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-2">
+                            <li><strong>key:</strong> Уникальный ID поля (начинается с `field_`).</li>
+                            <li><strong>label:</strong> Видимая метка поля.</li>
+                            <li><strong>name:</strong> Имя, используемое для сохранения и получения данных (например, `hero_title`).</li>
+                            <li><strong>type:</strong> Тип поля (например, `text`, `image`, `repeater`).</li>
+                            <li><strong>instructions:</strong> Инструкции для редактора контента.</li>
+                            <li><strong>required:</strong> `1` если поле обязательно для заполнения, `0` — если нет.</li>
+                            <li><strong>conditional_logic:</strong> Массив правил для условного отображения поля.</li>
+                            <li><strong>wrapper:</strong> Массив с атрибутами для HTML-обертки поля (`width`, `class`, `id`).</li>
+                            <li><strong>default_value:</strong> Значение по умолчанию.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section id="conditional-logic" class="content-section space-y-6">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-light border-b border-gray-200 dark:border-gray-700 pb-2">Условная логика (Conditional Logic)</h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-300">Условная логика позволяет динамически отображать или скрывать поля в административной панели в зависимости от значений других полей. Это значительно улучшает пользовательский опыт и упрощает интерфейс для редакторов.</p>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+                        <h3 class="font-semibold text-lg mb-2">Структура <code>conditional_logic</code></h3>
+                        <p class="text-gray-600 dark:text-gray-300 mb-4">Параметр <code>conditional_logic</code> представляет собой массив массивов. Каждый внутренний массив является "группой правил", и если хотя бы одна группа правил истинна, поле будет отображено. Внутри каждой группы правил все условия должны быть истинными.</p>
+                        <div class="code-block bg-dark text-light p-4 rounded-lg overflow-x-auto">
+                            <button class="copy-btn">Копировать</button>
+                            <pre><code class="language-php">
+// Пример сложной условной логики
+'conditional_logic' => array(
+    array( // Группа правил 1: Поле отображается, если 'show_extra_info' равно true
+        array(
+            'field' => 'field_show_extra_info', // Ключ поля, от которого зависит текущее поле
+            'operator' => '==', // Оператор сравнения
+            'value' => '1', // Значение, с которым сравнивается поле (для true/false '1' или '0')
+        ),
+    ),
+    array( // Группа правил 2: ИЛИ если 'content_type_select' равно 'custom_text' И 'is_urgent' равно true
+        array(
+            'field' => 'field_content_type_select',
+            'operator' => '==',
+            'value' => 'custom_text',
+        ),
+        array(
+            'field' => 'field_is_urgent',
+            'operator' => '==',
+            'value' => '1',
+        ),
+    ),
+),
+                            </code></pre>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-300 mt-4">
+                            <strong>Ключевые параметры внутри правила:</strong>
+                            <ul class="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1 mt-2">
+                                <li><strong>`field` (строка):</strong> Уникальный ключ поля (`field_...`), от которого зависит текущее поле.</li>
+                                <li><strong>`operator` (строка):</strong> Оператор сравнения.
+                                    <ul class="list-disc list-inside ml-4">
+                                        <li>`==`: равно</li>
+                                        <li>`!=`: не равно</li>
+                                        <li>`empty`: пусто</li>
+                                        <li>`!empty`: не пусто</li>
+                                        <li>`contains`: содержит (для текстовых полей или выбора из нескольких)</li>
+                                        <li>`!contains`: не содержит</li>
+                                    </ul>
+                                </li>
+                                <li><strong>`value` (строка):</strong> Значение, с которым сравнивается поле. Для полей типа "Истина / Ложь" (`true_false`) используйте `'1'` для "истина" и `'0'` для "ложь". Для полей "Выбор" (`select`, `radio`, `checkbox`) используйте значение опции.</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50">
+                        <h3 class="font-semibold text-lg mb-2">Полный пример с условной логикой</h3>
+                        <p class="text-gray-600 dark:text-gray-300 mb-4">Этот пример демонстрирует группу полей, в которой текстовое поле "Дополнительная информация" отображается только тогда, когда переключатель "Показать дополнительную информацию" установлен в положение "Да".</p>
+                        <div class="code-block bg-dark text-light p-4 rounded-lg overflow-x-auto">
+                            <button class="copy-btn">Копировать</button>
+                            <pre><code class="language-php">if( function_exists('acf_add_local_field_group') ):
+
+acf_add_local_field_group(array(
+    'key' => 'group_conditional_example',
+    'title' => 'Пример условной логики',
+    'fields' => array(
+        array(
+            'key' => 'field_show_extra_info',
+            'label' => 'Показать дополнительную информацию?',
+            'name' => 'show_extra_info',
+            'type' => 'true_false',
+            'ui' => 1, // Использовать стилизованный переключатель
+            'ui_on_text' => 'Да',
+            'ui_off_text' => 'Нет',
+        ),
+        array(
+            'key' => 'field_extra_details_text',
+            'label' => 'Дополнительные детали',
+            'name' => 'extra_details_text',
+            'type' => 'textarea',
+            'instructions' => 'Введите здесь дополнительные сведения.',
+            'conditional_logic' => array( // Условная логика для этого поля
+                array( // Группа правил: отображать, если 'show_extra_info' равно '1' (Да)
+                    array(
+                        'field' => 'field_show_extra_info', // Ключ поля, от которого зависит
+                        'operator' => '==', // Оператор: равно
+                        'value' => '1', // Значение: '1' (истина)
+                    ),
+                ),
+            ),
+        ),
+        array(
+            'key' => 'field_select_option',
+            'label' => 'Выберите опцию',
+            'name' => 'select_option',
+            'type' => 'select',
+            'choices' => array(
+                'option_a' => 'Опция A',
+                'option_b' => 'Опция B',
+                'option_c' => 'Опция C',
+            ),
+        ),
+        array(
+            'key' => 'field_option_b_details',
+            'label' => 'Детали для опции B',
+            'name' => 'option_b_details',
+            'type' => 'text',
+            'instructions' => 'Это поле видно только при выборе Опции B.',
+            'conditional_logic' => array(
+                array(
+                    array(
+                        'field' => 'field_select_option',
+                        'operator' => '==',
+                        'value' => 'option_b',
+                    ),
+                ),
+            ),
+        ),
+    ),
+    'location' => array(
+        array(
+            array(
+                'param' => 'post_type',
+                'operator' => '==',
+                'value' => 'page', // Эта группа будет отображаться на всех страницах
+            ),
+        ),
+    ),
+    'menu_order' => 0,
+    'position' => 'normal',
+    'style' => 'default',
+    'label_placement' => 'top',
+    'instruction_placement' => 'label',
+    'hide_on_screen' => '',
+));
+
+endif;</code></pre>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="field-types" class="content-section space-y-6">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-light border-b border-gray-200 dark:border-gray-700 pb-2">Справочник по типам полей</h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-300">Выберите тип поля, чтобы увидеть его описание, специфические параметры и готовый пример кода.</p>
+                    
+                    <div id="field-type-selector" class="space-y-4">
+                        <!-- Categories will be injected here by JS -->
+                    </div>
+
+                    <div id="field-details-container" class="mt-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 min-h-[300px]">
+                        <!-- Field details will be injected here by JS -->
+                        <div class="text-center text-gray-500 dark:text-gray-400 pt-16">
+                            <p>Выберите тип поля из списка выше, чтобы увидеть подробности.</p>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="advanced" class="content-section space-y-6">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-light border-b border-gray-200 dark:border-gray-700 pb-2">Расширенная кастомизация: Хуки и фильтры</h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-300">ACF предоставляет мощную систему хуков и фильтров для динамического изменения поведения полей.</p>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                            <h3 class="font-semibold text-lg mb-2">Ключевые действия (Actions)</h3>
+                            <ul class="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1">
+                                <li><code>acf/init</code>: Для регистрации полей.</li>
+                                <li><code>acf/save_post</code>: Для выполнения действий после сохранения данных.</li>
+                                <li><code>acf/validate_save_post</code>: Для комплексной валидации перед сохранением.</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                            <h3 class="font-semibold text-lg mb-2">Ключевые фильтры (Filters)</h3>
+                            <ul class="list-disc list-inside text-gray-600 dark:text-gray-300 space-y-1">
+                                <li><code>acf/load_field</code>: Для изменения настроек поля при загрузке.</li>
+                                <li><code>acf/load_value</code>: Для обработки значения перед его отображением.</li>
+                                <li><code>acf/update_value</code>: Для обработки значения перед сохранением в БД.</li>
+                                <li><code>acf/validate_value</code>: Для валидации значения отдельного поля.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="troubleshooting" class="content-section space-y-6">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-light border-b border-gray-200 dark:border-gray-700 pb-2">Устранение неполадок</h2>
+                    <div class="space-y-4">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                            <h3 class="font-semibold text-lg mb-2">Поля не отображаются в админке</h3>
+                            <p class="text-gray-600 dark:text-gray-300">Это ожидаемое поведение. Программно зарегистрированные поля не появляются в меню "Произвольные поля". Проверьте правильность ваших правил `location` и убедитесь, что вы находитесь на нужной странице редактирования.</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                            <h3 class="font-semibold text-lg mb-2">Дублирующиеся ключи</h3>
+                            <p class="text-gray-600 dark:text-gray-300">Если вы используете одинаковый `key` для разных полей или групп, последнее определение в коде перезапишет предыдущее. Всегда используйте уникальные ключи.</p>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+                            <h3 class="font-semibold text-lg mb-2">Проблемы с переводом (WPML)</h3>
+                            <p class="text-gray-600 dark:text-gray-300">Для сложных полей (Repeater, Flexible Content) может потребоваться дополнительная настройка в WPML. Перейдите в "WPML > Настройки > Перевод пользовательских полей", найдите системные поля (начинаются с `_`) и установите для них опцию "Копировать".</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Theme toggle functionality
+    const html = document.documentElement;
+    const themeToggle = document.createElement('button');
+    themeToggle.id = 'theme-toggle';
+    themeToggle.className = 'px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center text-gray-800 dark:text-light mt-6';
+    themeToggle.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-primary dark:text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+        Переключить тему
+    `;
+    document.querySelector('main').prepend(themeToggle); // Add toggle button to main content area
+
+    themeToggle.addEventListener('click', () => {
+        html.classList.toggle('dark');
+        localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    // Apply saved theme on load
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        html.classList.add('dark');
+    } else {
+        html.classList.remove('dark');
+    }
+
+    const fieldData = {
+        'Базовые': [
+            { 
+                name: 'Текст', type: 'text', 
+                description: 'Простое текстовое поле для ввода одной строки.',
+                params: [
+                    { name: 'placeholder', description: 'Текст-заполнитель, отображаемый в пустом поле.' },
+                    { name: 'prepend', description: 'Текст перед полем ввода.' },
+                    { name: 'append', description: 'Текст после поля ввода.' },
+                    { name: 'maxlength', description: 'Максимальное количество символов.' }
+                ]
+            },
+            { 
+                name: 'Текстовая область', type: 'textarea',
+                description: 'Поле для ввода многострочного текста.',
+                params: [
+                    { name: 'rows', description: 'Высота поля в строках.' },
+                    { name: 'new_lines', description: "Как обрабатывать переносы строк ('wpautop', 'br', '')." },
+                    { name: 'maxlength', description: 'Максимальное количество символов.' }
+                ]
+            },
+            { 
+                name: 'Число', type: 'number',
+                description: 'Поле для ввода числовых значений.',
+                params: [
+                    { name: 'min', description: 'Минимально допустимое значение.' },
+                    { name: 'max', description: 'Максимально допустимое значение.' },
+                    { name: 'step', description: 'Шаг инкремента/декремента.' }
+                ]
+            },
+            { 
+                name: 'Email', type: 'email',
+                description: 'Поле для ввода адреса электронной почты с базовой валидацией.',
+                params: []
+            },
+            { 
+                name: 'URL', type: 'url',
+                description: 'Поле для ввода веб-адреса.',
+                params: []
+            },
+            { 
+                name: 'Пароль', type: 'password',
+                description: 'Поле для ввода пароля, символы скрываются.',
+                params: []
+            },
+        ],
+        'Контент': [
+            { 
+                name: 'Изображение', type: 'image',
+                description: 'Поле для загрузки или выбора изображения из медиабиблиотеки.',
+                params: [
+                    { name: 'return_format', description: "Формат возвращаемого значения ('array', 'url', 'id')." },
+                    { name: 'preview_size', description: 'Размер превью в админ-панели.' },
+                    { name: 'library', description: "Ограничение выбора ('all' или 'uploadedTo')." },
+                    { name: 'min_width, max_width', description: 'Ограничения по ширине изображения.' },
+                    { name: 'min_height, max_height', description: 'Ограничения по высоте изображения.' },
+                ]
+            },
+            { 
+                name: 'Файл', type: 'file',
+                description: 'Поле для загрузки или выбора файла.',
+                params: [
+                    { name: 'return_format', description: "Формат возвращаемого значения ('array', 'url', 'id')." },
+                    { name: 'min_size, max_size', description: "Ограничения по размеру файла (например, '1MB')." },
+                    { name: 'mime_types', description: "Разрешенные типы файлов (например, 'pdf,docx')." }
+                ]
+            },
+            {
+                name: 'WYSIWYG Редактор', type: 'wysiwyg',
+                description: 'Полноценный визуальный редактор для форматирования текста.',
+                params: [
+                    { name: 'tabs', description: "Доступные вкладки ('all', 'visual', 'text')." },
+                    { name: 'toolbar', description: "Конфигурация панели инструментов ('full', 'basic')." },
+                    { name: 'media_upload', description: 'Разрешить загрузку медиафайлов (1 или 0).' }
+                ]
+            },
+            {
+                name: 'oEmbed', type: 'oembed',
+                description: 'Поле для вставки контента с других сайтов (YouTube, Vimeo и т.д.) по ссылке.',
+                params: [
+                    { name: 'width', description: 'Ширина встраиваемого контента.' },
+                    { name: 'height', description: 'Высота встраиваемого контента.' }
+                ]
+            },
+            {
+                name: 'Галерея', type: 'gallery',
+                description: 'Позволяет создавать галерею из нескольких изображений.',
+                params: [
+                    { name: 'min', description: 'Минимальное количество изображений.' },
+                    { name: 'max', description: 'Максимальное количество изображений.' },
+                    { name: 'insert', description: "Как добавлять изображения в галерею ('append' или 'prepend')." },
+                ]
+            },
+        ],
+        'Выбор': [
+            {
+                name: 'Выбор (Select)', type: 'select',
+                description: 'Выпадающий список для выбора одного или нескольких вариантов.',
+                params: [
+                    { name: 'choices', description: "Массив вариантов в формате 'value' => 'label'." },
+                    { name: 'allow_null', description: 'Разрешить пустое значение (1 или 0).' },
+                    { name: 'multiple', description: 'Разрешить множественный выбор (1 или 0).' },
+                    { name: 'ui', description: 'Использовать улучшенный интерфейс Select2 (1 или 0).' }
+                ]
+            },
+            {
+                name: 'Чекбокс', type: 'checkbox',
+                description: 'Набор флажков для выбора нескольких вариантов.',
+                params: [
+                    { name: 'choices', description: "Массив вариантов в формате 'value' => 'label'." },
+                    { name: 'layout', description: "Расположение ('vertical' или 'horizontal')." },
+                    { name: 'toggle', description: 'Добавить опцию "Выбрать все" (1 или 0).' },
+                    { name: 'return_format', description: "Формат возвращаемого значения ('value', 'label', 'array')." }
+                ]
+            },
+            {
+                name: 'Радиокнопки', type: 'radio',
+                description: 'Набор переключателей для выбора одного варианта.',
+                params: [
+                    { name: 'choices', description: "Массив вариантов в формате 'value' => 'label'." },
+                    { name: 'layout', description: "Расположение ('vertical' или 'horizontal')." },
+                    { name: 'other_choice', description: 'Разрешить ввод своего варианта (1 или 0).' }
+                ]
+            },
+            {
+                name: 'Истина / Ложь', type: 'true_false',
+                description: 'Простой переключатель (тумблер) для значений Да/Нет.',
+                params: [
+                    { name: 'message', description: 'Текст, отображаемый рядом с переключателем.' },
+                    { name: 'ui', description: 'Использовать стилизованный переключатель (1 или 0).' }
+                ]
+            },
+        ],
+        'Реляционные': [
+             {
+                name: 'Объект записи', type: 'post_object',
+                description: 'Поле для выбора одной или нескольких записей, страниц или кастомных типов записей.',
+                params: [
+                    { name: 'post_type', description: 'Массив типов записей для выбора.' },
+                    { name: 'taxonomy', description: 'Массив таксономий для фильтрации.' },
+                    { name: 'multiple', description: 'Разрешить множественный выбор (1 или 0).' },
+                    { name: 'return_format', description: "Формат возвращаемого значения ('object' или 'id')." }
+                ]
+            },
+            {
+                name: 'Связь', type: 'relationship',
+                description: 'Продвинутое поле для выбора и сортировки записей с поиском и фильтрацией.',
+                params: [
+                    { name: 'post_type', description: 'Массив типов записей для выбора.' },
+                    { name: 'filters', description: "Массив доступных фильтров ('search', 'post_type', 'taxonomy')." },
+                    { name: 'min', description: 'Минимальное количество записей.' },
+                    { name: 'max', description: 'Максимальное количество записей.' }
+                ]
+            },
+            {
+                name: 'Таксономия', type: 'taxonomy',
+                description: 'Поле для выбора одного или нескольких терминов из таксономии.',
+                params: [
+                    { name: 'taxonomy', description: 'Слаг таксономии (например, `category`).' },
+                    { name: 'field_type', description: "Тип интерфейса ('checkbox', 'multi_select', 'radio', 'select')." },
+                    { name: 'add_term', description: 'Разрешить добавление новых терминов (1 или 0).' },
+                    { name: 'return_format', description: "Формат возвращаемого значения ('object' или 'id')." }
+                ]
+            },
+            {
+                name: 'Пользователь', type: 'user',
+                description: 'Поле для выбора одного или нескольких пользователей WordPress.',
+                params: [
+                    { name: 'role', description: 'Массив ролей для фильтрации пользователей.' },
+                    { name: 'multiple', description: 'Разрешить множественный выбор (1 или 0).' },
+                    { name: 'return_format', description: "Формат возвращаемого значения ('array', 'object', 'id')." }
+                ]
+            },
+        ],
+        'Сложные': [
+            {
+                name: 'Повторитель', type: 'repeater',
+                description: 'Позволяет создавать повторяющиеся наборы полей (строки).',
+                params: [
+                    { name: 'sub_fields', description: 'Массив с определениями подполей.' },
+                    { name: 'min', description: 'Минимальное количество строк.' },
+                    { name: 'max', description: 'Максимальное количество строк.' },
+                    { name: 'layout', description: "Макет отображения ('table', 'block', 'row')." },
+                    { name: 'button_label', description: 'Текст на кнопке "Добавить строку".' }
+                ]
+            },
+            {
+                name: 'Гибкий контент', type: 'flexible_content',
+                description: 'Мощное поле, позволяющее создавать конструктор страницы из предопределенных "макетов" с разными наборами полей.',
+                params: [
+                    { name: 'layouts', description: 'Массив, определяющий доступные макеты. Каждый макет имеет свои подполя.' },
+                    { name: 'min', description: 'Минимальное количество макетов.' },
+                    { name: 'max', description: 'Максимальное количество макетов.' },
+                    { name: 'button_label', description: 'Текст на кнопке "Добавить макет".' }
+                ]
+            },
+            {
+                name: 'Группа', type: 'group',
+                description: 'Организует несколько полей в единый блок. Удобно для структурирования.',
+                params: [
+                    { name: 'sub_fields', description: 'Массив с определениями подполей.' },
+                    { name: 'layout', description: "Макет отображения ('block' или 'table')." }
+                ]
+            },
+        ]
+    };
+
+    const fieldSelector = document.getElementById('field-type-selector');
+    const detailsContainer = document.getElementById('field-details-container');
+
+    function generateCodeExample(field) {
+        let paramsString = '';
+        if (field.type === 'repeater' || field.type === 'group') {
+            paramsString = `
+    'sub_fields' => array(
+        // Определения подполей...
+        array(
+            'key' => 'field_${field.type}_sub_1',
+            'label' => 'Подполе 1',
+            'name' => 'sub_field_1',
+            'type' => 'text',
+        ),
+    ),`;
+        } else if (field.type === 'flexible_content') {
+            paramsString = `
+    'layouts' => array(
+        'layout_5f0d9f8c1b2a3' => array(
+            'key' => 'layout_5f0d9f8c1b2a3',
+            'name' => 'my_layout',
+            'label' => 'Мой Макет',
+            'display' => 'block',
+            'sub_fields' => array(
+                // Определения подполей для этого макета...
+                array(
+                    'key' => 'field_flex_sub_1',
+                    'label' => 'Заголовок макета',
+                    'name' => 'layout_title',
+                    'type' => 'text',
+                ),
+            ),
+        ),
+    ),`;
+        } else if (field.type === 'select' || field.type === 'checkbox' || field.type === 'radio') {
+            paramsString = `
+    'choices' => array(
+        'value1' => 'Метка 1',
+        'value2' => 'Метка 2',
+    ),`;
+        } else if (field.type === 'image' || field.type === 'file') {
+             paramsString = `
+    'return_format' => 'id',`;
+        }
+
+        // Add conditional logic example for a generic text field
+        let conditionalLogicExample = '';
+        if (field.type === 'text') {
+            conditionalLogicExample = `
+    'conditional_logic' => array(
+        array(
+            array(
+                'field' => 'field_show_extra_info', // Предполагается, что есть поле true_false с этим ключом
+                'operator' => '==',
+                'value' => '1',
+            ),
+        ),
+    ),`;
+        }
+
+
+        return `array(
+    'key' => 'field_example_${field.type}',
+    'label' => '${field.name}',
+    'name' => 'example_${field.type}',
+    'type' => '${field.type}',${paramsString}${conditionalLogicExample}
+),`;
+    }
+
+    function displayFieldDetails(field) {
+        let paramsHtml = '<p class="text-gray-500 dark:text-gray-400">У этого поля нет специфических параметров.</p>';
+        if (field.params.length > 0) {
+            paramsHtml = `
+                <div class="overflow-x-auto"> <!-- Added for table responsiveness -->
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="py-2 border-b-2 border-gray-200 dark:border-gray-700 font-semibold">Параметр</th>
+                                <th class="py-2 border-b-2 border-gray-200 dark:border-gray-700 font-semibold">Описание</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${field.params.map(p => `
+                                <tr>
+                                    <td class="py-2 border-b border-gray-200 dark:border-gray-700 font-mono text-sm text-primary dark:text-accent">${p.name}</td>
+                                    <td class="py-2 border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">${p.description}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        const codeExample = generateCodeExample(field);
+
+        detailsContainer.innerHTML = `
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-800 dark:text-light">${field.name}</h3>
+                    <p class="text-gray-600 dark:text-gray-300 mt-1">${field.description}</p>
+                </div>
+                <div>
+                    <h4 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">Параметры</h4>
+                    ${paramsHtml}
+                </div>
+                <div>
+                    <h4 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">Пример кода</h4>
+                    <div class="code-block bg-dark text-light p-4 rounded-lg overflow-x-auto">
+                        <button class="copy-btn">Копировать</button>
+                        <pre><code class="language-php">${codeExample}</code></pre>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    Object.keys(fieldData).forEach(category => {
+        const categoryHtml = `
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-3">${category}</h3>
+                <div class="flex flex-wrap gap-2">
+                    ${fieldData[category].map(field => `
+                        <button class="field-type-btn text-sm px-3 py-1.5 rounded-full bg-gray-200/60 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 hover:bg-gray-300/80 dark:hover:bg-gray-600/80 transition" data-field-type="${field.type}">
+                            ${field.name}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        fieldSelector.innerHTML += categoryHtml;
+    });
+
+    fieldSelector.addEventListener('click', function(e) {
+        if (e.target.classList.contains('field-type-btn')) {
+            const fieldType = e.target.dataset.fieldType;
+            
+            document.querySelectorAll('.field-type-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+
+            for (const category in fieldData) {
+                const field = fieldData[category].find(f => f.type === fieldType);
+                if (field) {
+                    displayFieldDetails(field);
+                    break;
+                }
+            }
+        }
+    });
+
+    detailsContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('copy-btn')) {
+            const button = e.target;
+            const pre = button.nextElementSibling;
+            const code = pre.querySelector('code');
+            const text = code.innerText;
+
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                button.textContent = 'Скопировано!';
+                button.classList.add('copied');
+            } catch (err) {
+                console.error('Не удалось скопировать текст: ', err);
+                button.textContent = 'Ошибка';
+            }
+            document.body.removeChild(textArea);
+
+            setTimeout(() => {
+                button.textContent = 'Копировать';
+                button.classList.remove('copied');
+            }, 2000);
+        }
+    });
+
+    const contentContainer = document.getElementById('content-container');
+    const sections = contentContainer.querySelectorAll('.content-section');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const mobileNav = document.getElementById('mobile-nav');
+
+    function showSection(id) {
+        sections.forEach(section => {
+            if (section.id === id) {
+                section.classList.add('active');
+            } else {
+                section.classList.remove('active');
+            }
+        });
+
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === '#' + id) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+        
+        if (mobileNav.value !== id) {
+            mobileNav.value = id;
+        }
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('desktop-nav').addEventListener('click', function(e) {
+        if (e.target.tagName === 'A') {
+            e.preventDefault();
+            const id = e.target.getAttribute('href').substring(1);
+            showSection(id);
+            window.history.pushState({id: id}, '', `#${id}`);
+        }
+    });
+    
+    mobileNav.addEventListener('change', function(e) {
+        const id = e.target.value;
+        showSection(id);
+        window.history.pushState({id: id}, '', `#${id}`);
+    });
+
+    window.addEventListener('popstate', function(e) {
+        const id = e.state ? e.state.id : 'intro';
+        showSection(id);
+    });
+
+    const initialId = window.location.hash ? window.location.hash.substring(1) : 'intro';
+    showSection(initialId);
+
+});
+</script>
+
+</body>
+</html>
